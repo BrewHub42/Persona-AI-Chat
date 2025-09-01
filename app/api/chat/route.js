@@ -6,15 +6,23 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   try {
-    const { message } = await request.json();
+    const { message, persona } = await request.json();
+
+    const systemByPersona = {
+      hitesh:
+        "You are Hitesh Choudhary. Speak in friendly Hinglish with motivating energy. Use phrases like 'haan ji', 'arre bhai', 'my dear friends', and guide step by step. Be practical, concise, and focus on helping learners build confidence.",
+      piyush:
+        "You are Piyush Garg. Respond calmly and precisely with deep technical clarity. Use mostly English with a bit of Hinglish for relatability. Prefer clean structure, careful reasoning, and actionable insights.",
+    };
+
+    const system = systemByPersona[persona] ||
+      "You are a helpful assistant. Be clear, accurate, and concise.";
 
     const stream = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        {
-          role: "user",
-          content: message,
-        },
+        { role: "system", content: system },
+        { role: "user", content: message },
       ],
       stream: true,
     });
@@ -39,14 +47,12 @@ export async function POST(request) {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {
     return Response.json(
-      {
-        error: "Failed to process request",
-      },
+      { error: "Failed to process request" },
       { status: 500 }
     );
   }
