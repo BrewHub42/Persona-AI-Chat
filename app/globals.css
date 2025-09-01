@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@layer utilities {
+  .app-border {
+    @apply border border-neutral-200 dark:border-neutral-800;
+  }
+}
