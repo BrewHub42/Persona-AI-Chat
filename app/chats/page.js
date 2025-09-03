@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { personas, getPersonaById } from "../personas.js";
-import { Youtube, Twitter, Linkedin, ArrowLeft } from "lucide-react";
+import { Youtube, Twitter, Linkedin, ArrowLeft, User } from "lucide-react";
 
 export default function Chats() {
   const searchParams = useSearchParams();
@@ -109,8 +109,8 @@ export default function Chats() {
     <main className="min-h-screen font-sans flex flex-col bg-[radial-gradient(80%_60%_at_50%_0%,rgba(0,0,0,0.03),transparent)] dark:bg-[radial-gradient(80%_60%_at_50%_0%,rgba(255,255,255,0.06),transparent)]">
       <section className="mx-auto max-w-4xl w-full flex-1 flex flex-col px-6 sm:px-12 py-6">
         <header className={`rounded-xl app-border ${activePersona.accent.border} p-4 sm:p-5 bg-background`}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3 w-full">
               <button
                 onClick={() => router.back()}
                 className="mr-2 inline-flex h-9 w-9 items-center justify-center rounded-full app-border hover:bg-neutral-100 dark:hover:bg-neutral-900 transition"
@@ -143,11 +143,11 @@ export default function Chats() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <label htmlFor="persona" className="text-xs text-neutral-600 dark:text-neutral-300">Persona</label>
+            <div className="flex items-center gap-2 ml-auto">
+              <User className="h-4 w-4 text-neutral-600 dark:text-neutral-300" aria-hidden="true" />
               <select
-                id="persona"
-                className="rounded-md app-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+                id="persona" aria-label="Select persona"
+                className="rounded-md app-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 w-56"
                 value={personaId}
                 onChange={(e) => handlePersonaChange(e.target.value)}
                 disabled={streaming}
