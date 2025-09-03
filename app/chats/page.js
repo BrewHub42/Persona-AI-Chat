@@ -1,10 +1,10 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { personas, getPersonaById } from "../personas.js";
 import { Youtube, Twitter, Linkedin, ArrowLeft, User } from "lucide-react";
 
-export default function Chats() {
+function ChatsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -242,5 +242,13 @@ export default function Chats() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function Chats() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ChatsContent />
+    </Suspense>
   );
 }
