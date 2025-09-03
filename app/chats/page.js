@@ -16,6 +16,9 @@ export default function Chats() {
   const [streaming, setStreaming] = useState(false);
   const [streamResponse, setStreamResponse] = useState("");
   const [lastUserMsg, setLastUserMsg] = useState("");
+  const [currentStep, setCurrentStep] = useState("");
+  const [thinkingSteps, setThinkingSteps] = useState([]);
+  const [messages, setMessages] = useState([]);
 
   const handlePersonaChange = (id) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -25,15 +28,25 @@ export default function Chats() {
     setLastUserMsg("");
     setStreamResponse("");
     setStreaming(false);
+    setCurrentStep("");
+    setThinkingSteps([]);
+    setMessages([]);
   };
 
   const handleStreamChat = async () => {
     const text = message.trim();
     if (!text || streaming) return;
     setLastUserMsg(text);
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setMessage("");
     setStreaming(true);
+    setCurrentStep("");
+    setThinkingSteps([]);
     setStreamResponse("");
+
+    // Local accumulators to avoid state race conditions
+    let streamed = "";
+    let sseBuffer = "";
 
     try {
       const res = await fetch("/api/chat", {
@@ -48,17 +61,45 @@ export default function Chats() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n\n");
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.slice(6));
+        sseBuffer += decoder.decode(value);
+        const events = sseBuffer.split("\n\n");
+        sseBuffer = events.pop() || ""; // keep incomplete part
+        for (const evt of events) {
+          if (!evt.startsWith("data: ")) continue;
+          const payload = evt.slice(6);
+          let data;
+          try {
+            data = JSON.parse(payload);
+          } catch {
+            // if JSON incomplete, prepend back to buffer
+            sseBuffer = payload + "\n\n" + sseBuffer;
+            continue;
+          }
+
+          if (data.streaming && data.content) {
+            streamed += data.content;
             setStreamResponse((prev) => prev + data.content);
+          } else if (data.step === "START") {
+            setCurrentStep("🔥 Starting...");
+          } else if (data.step === "THINK") {
+            setCurrentStep("🧠 Thinking...");
+            if (data.content) setThinkingSteps((prev) => [...prev, data.content]);
+          } else if (data.step === "OUTPUT") {
+            setCurrentStep("📝 Generating response...");
+            setStreamResponse("");
           }
         }
       }
     } catch (error) {
       setStreamResponse("Error: " + (error?.message || String(error)));
+    }
+
+    const final = streamed.trim();
+    if (final) {
+      setMessages((prev) => [...prev, { role: "assistant", content: final }]);
+      setStreamResponse("");
+      setCurrentStep("");
+      setThinkingSteps([]);
     }
 
     setStreaming(false);
@@ -121,19 +162,53 @@ export default function Chats() {
 
         <div className="mt-6 flex-1 overflow-y-auto">
           <div className="flex flex-col gap-4">
-            {lastUserMsg && (
-              <div className="flex justify-end">
-                <div className="max-w-[80%] rounded-2xl bg-neutral-800 text-white px-4 py-3 shadow-sm">
-                  {lastUserMsg}
+            {messages.map((m, idx) => (
+              m.role === "user" ? (
+                <div key={idx} className="flex justify-end">
+                  <div className="max-w-[80%] rounded-2xl bg-neutral-800 text-white px-4 py-3 shadow-sm whitespace-pre-wrap">
+                    {m.content}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : (
+                <div key={idx} className="flex items-start gap-3">
+                  <img src={activePersona.avatar} alt="persona" className="h-8 w-8 rounded-full object-cover" />
+                  <div className="max-w-[80%] rounded-2xl bg-neutral-100 dark:bg-neutral-900 px-4 py-3 shadow-sm whitespace-pre-wrap text-sm">
+                    {m.content}
+                  </div>
+                </div>
+              )
+            ))}
 
-            {streaming || streamResponse ? (
+            {streaming || streamResponse || currentStep ? (
               <div className="flex items-start gap-3">
                 <img src={activePersona.avatar} alt="persona" className="h-8 w-8 rounded-full object-cover" />
-                <div className="max-w-[80%] rounded-2xl bg-neutral-100 dark:bg-neutral-900 px-4 py-3 shadow-sm whitespace-pre-wrap">
-                  {streamResponse}
+                <div className="max-w-[80%] space-y-2">
+                  {currentStep && (
+                    <div className="text-sm text-neutral-600 dark:text-neutral-400 italic">
+                      {currentStep}
+                    </div>
+                  )}
+
+                  {thinkingSteps.length > 0 && !streaming && (
+                    <details className="text-xs text-neutral-500">
+                      <summary className="cursor-pointer hover:text-neutral-700">
+                        💭 View thinking process ({thinkingSteps.length} steps)
+                      </summary>
+                      <div className="mt-2 space-y-1 pl-4 border-l-2 border-neutral-200 dark:border-neutral-700">
+                        {thinkingSteps.map((step, i) => (
+                          <div key={i} className="text-neutral-600 dark:text-neutral-400">
+                            {step}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+
+                  {streamResponse && (
+                    <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-900 px-4 py-3 shadow-sm whitespace-pre-wrap text-sm">
+                      {streamResponse}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : null}

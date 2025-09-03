@@ -266,47 +266,138 @@ Be honest about real-world constraints (like server costs forcing a DB reset) an
 **ASSISTANT:** { "step": "THINK", "content": "Theek hai. This question is about the 'ecosystem builder' part of my persona. I need to explain the multi-tiered approach. Free content for reach, Udemy for self-paced learning, and premium cohorts for deep, interactive learning. I should also mention the collaboration aspect." }
 
 **ASSISTANT:** { "step": "OUTPUT", "content": "Dekho, har platform ka apna role hai. YouTube se hum sabse zyaada logo tak free value pahunchate hain. Udemy unke liye hai jo self-paced seekhna chahte hain. Lekin jo live, deep-dive experience chahiye, woh hum apne platform pe cohorts ke through dete hain. Yahan hum doosre top instructors ke saath bhi collaborate karte hain, jaise Piyush, Prateek. It's about building a complete ecosystem for learning." }
-      `,
-      piyush:
-        "You are Piyush Garg. Respond calmly and precisely with deep technical clarity. Use mostly English with a bit of Hinglish for relatability. Prefer clean structure, careful reasoning, and actionable insights.",
+
+You MUST follow this exact process:
+1. START: Brief acknowledgment 
+2. THINK: Your reasoning process (can be multiple steps)
+3. OUTPUT: Final response in your natural voice
+
+Always use JSON format: {"step": "START|THINK|OUTPUT", "content": "your text"}
+`,
+      piyush: `You are Piyush Garg. Respond calmly and precisely with deep technical clarity. Use mostly English with a bit of Hinglish for relatability. Prefer clean structure, careful reasoning, and actionable insights.
+
+You MUST follow this exact process:
+1. START: Brief acknowledgment 
+2. THINK: Your reasoning process (can be multiple steps)
+3. OUTPUT: Final response in your natural voice
+
+Always use JSON format: {"step": "START|THINK|OUTPUT", "content": "your text"}`,
     };
 
-    const SYSTEM_PROMPT =
+    const base =
       systemByPersona[persona] ||
-      "You are a helpful assistant. Be clear, accurate, and concise.";
+      `You are a helpful assistant. Be clear, accurate, and concise.
+CRITICAL: You MUST respond in this exact JSON format:
+{ "step": "START|THINK|OUTPUT", "content": "your response content" }
 
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: message },
-    ];
+Follow this process:
+1. START: Acknowledge the question
+2. THINK: Show your reasoning (can have multiple THINK steps)
+3. OUTPUT: Provide the final answer in your persona voice`;
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages,
-      stream: true,
-    });
+    const SYSTEM_PROMPT = `${base}
+
+OUTPUT constraints:
+- Begin directly with the answer; do not start with agreement/praise or acknowledgments (e.g., "You're right", "Bilkul sahi", "Absolutely", "Great question").
+- Keep OUTPUT concise and actionable.`;
 
     const encoder = new TextEncoder();
 
     const readable = new ReadableStream({
       async start(controller) {
-        for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content || "";
-          if (content) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)
-            );
+        try {
+          let conversationHistory = [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: message },
+          ];
+
+          // CoT loop until OUTPUT
+          while (true) {
+            const response = await openai.chat.completions.create({
+              model: "gpt-4o-mini",
+              messages: conversationHistory,
+              response_format: { type: "json_object" },
+              stream: true,
+            });
+
+            let buffer = "";
+            let stepData = null;
+
+            // Collect complete JSON for the current step
+            for await (const chunk of response) {
+              const delta = chunk.choices?.[0]?.delta?.content || "";
+              if (delta) buffer += delta;
+              try {
+                stepData = JSON.parse(buffer);
+                break; 
+              } catch {}
+            }
+
+            if (!stepData || !stepData.step) {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ step: "OUTPUT", content: "" })}\n\n`
+                )
+              );
+              break;
+            }
+
+            conversationHistory.push({
+              role: "assistant",
+              content: JSON.stringify(stepData),
+            });
+
+            if (stepData.step === "OUTPUT") {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ step: "OUTPUT", content: "" })}\n\n`
+                )
+              );
+
+              // Stream the final answer by chunking the OUTPUT content (no extra API call)
+              const finalText =
+                typeof stepData.content === "string"
+                  ? stepData.content
+                  : JSON.stringify(stepData.content);
+
+              const chunkSize = 8;
+              for (let i = 0; i < finalText.length; i += chunkSize) {
+                const piece = finalText.slice(i, i + chunkSize);
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({
+                      streaming: true,
+                      content: piece,
+                    })}\n\n`
+                  )
+                );
+                await new Promise((r) => setTimeout(r, 20));
+              }
+              break;
+            } else {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify(stepData)}\n\n`)
+              );
+            }
           }
+        } catch (err) {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ error: "Streaming failed" })}\n\n`
+            )
+          );
+        } finally {
+          controller.close();
         }
-        controller.close();
       },
     });
 
     return new Response(readable, {
       headers: {
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (error) {
