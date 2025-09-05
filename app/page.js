@@ -1,15 +1,13 @@
 import Link from "next/link";
 import { personas } from "./personas";
+import ByteMentorPill from "./components/ByteMentorPill";
 
 export default function Home() {
   return (
     <main className="min-h-screen px-6 py-10 sm:px-12 sm:py-14 font-sans bg-[radial-gradient(80%_60%_at_50%_0%,rgba(0,0,0,0.03),transparent)] dark:bg-[radial-gradient(80%_60%_at_50%_0%,rgba(255,255,255,0.06),transparent)]">
       <section className="mx-auto max-w-6xl">
-        <header className="mb-10 sm:mb-14">
-          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 app-border text-xs font-medium">
-            <span className="font-semibold">ByteMentor</span>
-            <span className="hidden sm:inline text-neutral-500">AI‑Powered Conversations</span>
-          </div>
+        <header className="mb-10 sm:mb-14 hero-system-font">
+          <ByteMentorPill />
           <h1 className="mt-4 text-3xl sm:text-5xl font-semibold tracking-tight">
             Chat, learn, and collaborate with
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-pink-500"> expert personas</span>
