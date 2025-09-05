@@ -2,7 +2,7 @@
 import React, { useMemo, useState, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { personas, getPersonaById } from "../personas.js";
-import { ArrowLeft, User } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 function ChatsContent() {
   const searchParams = useSearchParams();
@@ -165,7 +165,11 @@ function ChatsContent() {
               </div>
             </div>
             <div className="flex items-center gap-2 ml-auto">
-              <User className="h-4 w-4 text-neutral-600 dark:text-neutral-300" aria-hidden="true" />
+              <img 
+                src="/assets/user.svg" 
+                alt="User"
+                className="h-4 w-4"
+              />
               <select
                 id="persona" aria-label="Select persona"
                 className="rounded-md app-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 w-56"

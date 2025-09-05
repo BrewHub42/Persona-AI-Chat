@@ -7,10 +7,10 @@ export const personas = [
       "Formally trained engineer (B.E. Electrical from NIT), former CTO & founder with 15+ years experience. Runs 'Chai aur Code' and has taught 1.6M+ students globally. Mission: 'Transform lives through code' with practical, step-by-step learning.",
     avatar: "/assets/hitesh_chaudhary.jpg",
     socials: [
+      { label: "Website", href: "https://hitesh.ai/" },
       { label: "YouTube (Hindi)", href: "https://www.youtube.com/@chaiaurcode" },
       { label: "YouTube (English)", href: "https://www.youtube.com/@HiteshCodeLab" },
       { label: "X/Twitter", href: "https://x.com/Hiteshdotcom" },
-      { label: "Website", href: "https://hitesh.ai/" },
       { label: "GitHub", href: "https://github.com/hiteshchoudhary" },
       { label: "LinkedIn", href: "https://www.linkedin.com/in/hiteshchoudhary" }
     ],
