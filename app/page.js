@@ -1,12 +1,5 @@
 import Link from "next/link";
 import { personas } from "./personas";
-import { Youtube, Twitter, Linkedin } from "lucide-react";
-
-const iconMap = {
-  YouTube: Youtube,
-  "X/Twitter": Twitter,
-  LinkedIn: Linkedin,
-};
 
 export default function Home() {
   return (
@@ -56,7 +49,16 @@ export default function Home() {
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {p.socials.map((s) => {
-                  const Icon = iconMap[s.label] || null;
+                  // Map social labels to their corresponding SVG icons
+                  const getIconSrc = (label) => {
+                    if (label.includes("YouTube")) return "/assets/youtube.svg";
+                    if (label.includes("Twitter") || label.includes("X/")) return "/assets/x.svg";
+                    if (label.includes("LinkedIn")) return "/assets/linkedin.svg";
+                    if (label.includes("GitHub")) return "/assets/github.svg";
+                    if (label.includes("Website")) return "/assets/globe.svg";
+                    return "/assets/globe.svg"; // fallback icon
+                  };
+
                   return (
                     <a
                       key={s.href}
@@ -66,7 +68,11 @@ export default function Home() {
                       className="inline-flex h-9 w-9 items-center justify-center rounded-full app-border hover:bg-neutral-100 dark:hover:bg-neutral-900 transition"
                       aria-label={s.label}
                     >
-                      {Icon ? <Icon className="h-4 w-4" /> : <span className="text-xs">{s.label}</span>}
+                      <img 
+                        src={getIconSrc(s.label)} 
+                        alt={s.label}
+                        className="h-4 w-4"
+                      />
                     </a>
                   );
                 })}

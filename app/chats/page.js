@@ -2,7 +2,7 @@
 import React, { useMemo, useState, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { personas, getPersonaById } from "../personas.js";
-import { Youtube, Twitter, Linkedin, ArrowLeft, User } from "lucide-react";
+import { ArrowLeft, User } from "lucide-react";
 
 function ChatsContent() {
   const searchParams = useSearchParams();
@@ -126,7 +126,18 @@ function ChatsContent() {
                 <p className="text-sm text-neutral-600 dark:text-neutral-300">{activePersona.tagline}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {activePersona.socials.map((s) => {
-                    const Icon = s.label === "YouTube" ? Youtube : s.label === "X/Twitter" ? Twitter : s.label === "LinkedIn" ? Linkedin : null;
+                    // Map social labels to their corresponding SVG icons
+                    const getIconSrc = (label) => {
+                      if (label.includes("YouTube")) return "/assets/youtube.svg";
+                      if (label.includes("Twitter") || label.includes("X/")) return "/assets/x.svg";
+                      if (label.includes("LinkedIn")) return "/assets/linkedin.svg";
+                      if (label.includes("GitHub")) return "/assets/github.svg";
+                      if (label.includes("Website")) return "/assets/globe.svg";
+                      return "/assets/globe.svg"; // fallback icon
+                    };
+
+                    const iconSrc = getIconSrc(s.label);
+
                     return (
                       <a
                         key={s.href}
@@ -136,7 +147,17 @@ function ChatsContent() {
                         className="inline-flex h-8 w-8 items-center justify-center rounded-full app-border hover:bg-neutral-100 dark:hover:bg-neutral-900 transition"
                         aria-label={s.label}
                       >
-                        {Icon ? <Icon className="h-4 w-4" /> : <span className="text-[10px]">{s.label}</span>}
+                        <img 
+                          src={iconSrc} 
+                          alt={s.label}
+                          className="h-4 w-4"
+                          onError={(e) => {
+                            console.log('Failed to load icon:', iconSrc, 'for label:', s.label);
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                          }}
+                        />
+                        <span className="text-[10px] hidden">{s.label.slice(0, 2)}</span>
                       </a>
                     );
                   })}
