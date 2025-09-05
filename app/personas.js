@@ -32,8 +32,8 @@ export const personas = [
     avatar: "/assets/piyush_garg.jpg",
     socials: [
       { label: "Website", href: "https://piyushgarg.dev" },
-      { label: "YouTube", href: "https://www.youtube.com/@piyushgarg_dev" },
-      { label: "LinkedIn", href: "https://www.linkedin.com/in/piyushgargdev" },
+      { label: "YouTube", href: "https://www.youtube.com/@piyushgargdev" },
+      { label: "LinkedIn", href: "https://www.linkedin.com/in/piyushgarg195" },
       { label: "GitHub", href: "https://github.com/piyushgarg-dev" },
       { label: "X/Twitter", href: "https://twitter.com/piyushgarg_dev" }
     ],
